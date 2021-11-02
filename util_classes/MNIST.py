@@ -3,8 +3,6 @@ from tensorflow.keras import datasets, layers, models
 
 # Helper libraries
 import numpy as np
-import matplotlib.pyplot as plt
-from numpngw import write_png
 from datetime import datetime
 import pickle
 from sklearn.metrics import confusion_matrix
@@ -143,13 +141,15 @@ class CNN():
     def build_model(self):
         t_s = self.mnist.train_images.shape
         if len(t_s) < 4:
-            layer_list = [layers.Conv2D(self.hidden_layers[0][0], (self.hidden_layers[0][1], self.hidden_layers[0][1]),
-                                    input_shape=(28, 28, 1), activation=self.activation)]
+            layer_list = [layers.Conv2D(self.hidden_layers[0][0],
+                            (self.hidden_layers[0][1], self.hidden_layers[0][1]),
+                            input_shape=(28, 28, 1), activation=self.activation)]
             self.mnist.train_images = self.mnist.train_images.reshape((self.mnist.train_images.shape[0], 28, 28, 1))
             self.mnist.test_images = self.mnist.test_images.reshape((self.mnist.test_images.shape[0], 28, 28, 1))
         else:
-            layer_list = [layers.Conv2D(self.hidden_layers[0][0], (self.hidden_layers[0][1], self.hidden_layers[0][1]),
-                                    input_shape=(32, 32, 3), activation=self.activation)]
+            layer_list = [layers.Conv2D(self.hidden_layers[0][0],
+                            (self.hidden_layers[0][1], self.hidden_layers[0][1]),
+                            input_shape=(32, 32, 3), activation=self.activation)]
 
         i=0
         for filter, kernel in self.hidden_layers:

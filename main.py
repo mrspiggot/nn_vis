@@ -1,16 +1,65 @@
-# This is a sample Python script.
+import dash_core_components as dcc
+import dash_html_components as html
+import dash_bootstrap_components as dbc
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+from dash.dependencies import Input, Output, State
+from app import app
+
+from apps import show_images
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+
+navbar = dbc.Navbar(
+    dbc.Container(
+        [
+            html.A(
+                # Use row and col to control vertical alignment of logo / brand
+                dbc.Row(
+                    [
+                        dbc.Col(html.Img(src="assets/lucidate.png", height="90px")),
+                        dbc.Col(dbc.NavbarBrand("AI Dashboard", className="ml-2", href="/home")),
+                    ],
+                    align="center",
+                    no_gutters=True,
+                ),
+                href="https://websites.looka.com/preview/06d736f4?device=desktop",
+            ),
+            dbc.Collapse(
+                dbc.Nav(
+                    [dbc.NavItem(dbc.NavLink("Training images", href="/show_images", disabled=False)),
+                     ], className="ml-auto", navbar=True
+                ),
+                id="navbar-collapse2",
+                navbar=True,
+            ),
+
+        ]
+    ),
+    color="dark",
+    dark=True,
+    className="mb-5",
+)
 
 
-# Press the green button in the gutter to run the script.
+
+
+app.layout = html.Div([
+    dcc.Location(id='page-url'),
+    navbar,
+    html.Div(id='page-content', children=[]),
+
+])
+
+@app.callback(Output('page-content', 'children'),
+              [Input('page-url', 'pathname')])
+def display_page(pathname):
+    if pathname == '/show_images':
+        print("Hello")
+        return show_images.layout
+    # if pathname == '/results':
+    #     return results.layout
+    # if pathname == '/generate':
+    #     return generate.layout(layers)
+
 if __name__ == '__main__':
-    print_hi('PyCharm')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    app.run_server(debug=True, port=8025)
