@@ -92,17 +92,33 @@ class MLP():
 
     def confusion_mat(self, pckl=False):
         cp = []
-        for pred in self.prediction():
+        predictions = self.prediction()
+        for pred in predictions:
             cp.append(np.argmax(pred))
 
         conf_pred = np.array(cp)
 
         confusion = confusion_matrix(self.mnist.test_labels, conf_pred)
+        loss, acc = self.evaluate_model(verbosity=0)
         if pckl == True:
             now = datetime.now()
             mname = self.mnist.name + "MLPConfusion" + now.strftime("%Y%m%d_%H%M%S") + '.pickle'
             f = open(mname, "wb")
             pickle.dump(confusion, f)
+            f.close()
+
+            op_dict = {}
+            op_dict['Type'] = self.mnist.name
+            op_dict['Flavour'] = 'MLP'
+            op_dict['Loss'] = loss
+            op_dict['Accuracy'] = acc
+            op_dict['Layer code'] = self.hidden_layers
+            op_dict['Labels'] = self.mnist.class_names
+            op_dict['Confusion'] = confusion
+            op_dict['Prediction'] = predictions
+            mname = "../assets/" + self.mnist.name + "Output" + now.strftime("%Y%m%d_%H%M%S") + '.pickle'
+            f = open(mname, "wb")
+            pickle.dump(op_dict, f)
             f.close()
 
         return confusion
@@ -194,17 +210,33 @@ class CNN():
 
     def confusion_mat(self, pckl=False):
         cp = []
-        for pred in self.prediction():
+        predictions = self.prediction()
+        for pred in predictions:
             cp.append(np.argmax(pred))
 
         conf_pred = np.array(cp)
 
         confusion = confusion_matrix(self.mnist.test_labels, conf_pred)
+        loss, acc = self.evaluate_model(verbosity=0)
         if pckl == True:
             now = datetime.now()
             mname = self.mnist.name + "CNNConfusion" + now.strftime("%Y%m%d_%H%M%S") + '.pickle'
             f = open(mname, "wb")
             pickle.dump(confusion, f)
+            f.close()
+
+            op_dict = {}
+            op_dict['Type'] = self.mnist.name
+            op_dict['Flavour'] = 'CNN'
+            op_dict['Loss'] = loss
+            op_dict['Accuracy'] = acc
+            op_dict['Layer code'] = self.hidden_layers
+            op_dict['Labels'] = self.mnist.class_names
+            op_dict['Confusion'] = confusion
+            op_dict['Prediction'] = predictions
+            mname = "../assets/" + self.mnist.name + "Output" + now.strftime("%Y%m%d_%H%M%S") + '.pickle'
+            f = open(mname, "wb")
+            pickle.dump(op_dict, f)
             f.close()
 
         return confusion
@@ -230,6 +262,117 @@ class CNN():
         else:
             self.model = tf.keras.models.load_model(fname)
 
+class ModCNN():
+    def __init__(self, mnist, hidden_layers, activation):
+        self.mnist = mnist
+        self.num_layers = len(hidden_layers)
+        self.hidden_layers = hidden_layers
+        self.activation = activation
+        self.model = self.build_model()
+
+    def build_model(self):
+        model = tf.keras.models.Sequential()
+        model.add(layers.Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same',
+                         input_shape=(32, 32, 3)))
+        model.add(layers.Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+        model.add(layers.MaxPooling2D((2, 2)))
+        model.add(layers.Dropout(0.2))
+        model.add(layers.Conv2D(64, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+        model.add(layers.Conv2D(64, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+        model.add(layers.MaxPooling2D((2, 2)))
+        model.add(layers.Dropout(0.2))
+        model.add(layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+        model.add(layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+        model.add(layers.MaxPooling2D((2, 2)))
+        model.add(layers.Dropout(0.2))
+        model.add(layers.Flatten())
+        model.add(layers.Dense(128, activation='relu', kernel_initializer='he_uniform'))
+        model.add(layers.Dropout(0.2))
+        model.add(layers.Dense(10, activation='softmax'))
+        # compile model
+        opt = tf.keras.optimizers.SGD(lr=0.001, momentum=0.9)
+        print((model.summary()))
+        model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
+        return model
+
+    def compile_model(self):
+        self.model.compile(optimizer='adam',
+                      loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                      metrics=['accuracy'])
+
+    def train_model(self, epochs=10):
+        self.model.fit(self.mnist.train_images, self.mnist.train_labels, epochs=epochs)
+
+    def evaluate_model(self, verbosity=2):
+        test_loss, test_accuracy = self.model.evaluate(self.mnist.test_images, self.mnist.test_labels, verbose=verbosity)
+
+        return test_loss, test_accuracy
+
+    def prediction(self, pckl=False):
+        prediction_model = tf.keras.Sequential([self.model, tf.keras.layers.Softmax()])
+        pred = prediction_model.predict(self.mnist.test_images)
+        if pckl == True:
+            now = datetime.now()
+            fname = self.mnist.name + "CNNPredictions" + now.strftime("%Y%m%d_%H%M%S") + '.pickle'
+            f = open(fname, "wb")
+            pickle.dump(pred, f)
+            f.close()
+
+        return pred
+
+    def confusion_mat(self, pckl=False):
+        cp = []
+        predictions = self.prediction()
+        for pred in predictions:
+            cp.append(np.argmax(pred))
+
+        conf_pred = np.array(cp)
+
+        confusion = confusion_matrix(self.mnist.test_labels, conf_pred)
+        loss, acc = self.evaluate_model(verbosity=0)
+        if pckl == True:
+            now = datetime.now()
+            mname = self.mnist.name + "CNNConfusion" + now.strftime("%Y%m%d_%H%M%S") + '.pickle'
+            f = open(mname, "wb")
+            pickle.dump(confusion, f)
+            f.close()
+
+            op_dict = {}
+            op_dict['Type'] = self.mnist.name
+            op_dict['Flavour'] = 'CNN'
+            op_dict['Loss'] = loss
+            op_dict['Accuracy'] = acc
+            op_dict['Layer code'] = self.hidden_layers
+            op_dict['Labels'] = self.mnist.class_names
+            op_dict['Confusion'] = confusion
+            op_dict['Prediction'] = predictions
+            mname = "../assets/" + self.mnist.name + "Output" + now.strftime("%Y%m%d_%H%M%S") + '.pickle'
+            f = open(mname, "wb")
+            pickle.dump(op_dict, f)
+            f.close()
+
+        return confusion
+
+
+    def save_model(self, fname=""):
+        if fname == "":
+            now = datetime.now()
+            fname = self.mnist.name + "CNN" + now.strftime("%Y%m%d_%H%M%S") + '.hdf5'
+            self.model.save(fname)
+            return fname
+
+        if fname.split('.')[-1] != "hdf5":
+            fname = fname + '.hdf5'
+
+        self.model.save(fname)
+        return fname
+
+    def load_model(self, fname):
+        if fname == "":
+            print("Please provide a filename to load")
+            return
+        else:
+            self.model = tf.keras.models.load_model(fname)
 
 
 
