@@ -28,13 +28,18 @@ for item in mn.class_names:
 
 layout = html.Div([
     dbc.Row([
-        dbc.Col([html.P("Amount to display")], width=2, style={'textAlign': 'center'}, lg={'size': 2,  "offset": 4}),
+        dbc.Col([html.P("Type to display")], width=2, style={'textAlign': 'center'}, lg={'size': 2, "offset": 3}),
+        dbc.Col([html.P("Amount to display")], width=2, style={'textAlign': 'center'}, lg={'size': 2,  "offset": 0}),
         dbc.Col([html.P("Img. Size")], width=2, style={'textAlign': 'center'}),
     ]),
     dbc.Row([
         dbc.Col(
+            dcc.Dropdown(options =type_list, id="type-dd", value='fashion'),
+            width=2, lg={'size': 2, "offset": 3}
+        ),
+        dbc.Col(
             dcc.Slider(min=1, max=5, marks=amount_dict, id="amount-slider", value=2),
-            width=2,lg={'size': 2,  "offset": 4}
+            width=2,lg={'size': 2,  "offset": 0}
         ),
         dbc.Col(
             dcc.Slider(min=1, max=6, marks=slider_dict, id="size-slider", value=3),
@@ -48,20 +53,29 @@ layout = html.Div([
 
 @app.callback(Output('view-content', 'children'),
               [Input('amount-slider', 'value'),
-               Input('size-slider', 'value')])
-def draw_garments(amount, size):
-    print("Hello world")
+               Input('size-slider', 'value'),
+               Input('type-dd', 'value')])
+def draw_garments(amount, size, i_type):
+    mn = MNISTBase(i_type)
     ti = mn.test_images
     matching_images = []
-    print(size)
-    for i in range(int(amount_dict[amount])):
-        fig = make_subplots(1, 1)
-        img = np.array([[[255 - s, 255 - s, 255 - s] for s in r] for r in ti[i]], dtype="u1")
-        fig.add_trace(go.Image(z=img), 1, 1)
-        fig.update_layout(height=np.sqrt(size)*180, width=np.sqrt(size)*180)
-        matching_images.append(dcc.Graph(id='ret-fig', figure=fig))
+    size+=0.5
+    if i_type == 'cifar10':
+        for i in range(int(amount_dict[amount])):
+            fig = make_subplots(1, 1)
+            fig.add_trace(go.Image(z=ti[i]), 1, 1)
+            fig.update_layout(height=np.sqrt(size)*180, width=np.sqrt(size)*180, title=mn.class_names[mn.test_labels[i][0]])
+            matching_images.append(dcc.Graph(id='ret-fig', figure=fig))
 
-        im_row = dbc.Row(matching_images)
+    else:
+        for i in range(int(amount_dict[amount])):
+            fig = make_subplots(1, 1)
+            img = np.array([[[255 - s, 255 - s, 255 - s] for s in r] for r in ti[i]], dtype="u1")
+            fig.add_trace(go.Image(z=img), 1, 1)
+            fig.update_layout(height=np.sqrt(size)*180, width=np.sqrt(size)*180, title=mn.class_names[mn.test_labels[i]])
+            matching_images.append(dcc.Graph(id='ret-fig', figure=fig))
+
+    im_row = dbc.Row(matching_images)
 
 
     return im_row
@@ -84,37 +98,7 @@ def draw_garments(amount, size):
 
 
 
-    # to_display = int(amount_dict[amount])
-    # to_scale = size/1.5
-    # per_image = int(to_display / len(images))
-    # print("To display: ", to_display)
-    #
-    # mn = MNISTBase(im_type)
-    # N = [i for i in range(len(mn.class_names)) if mn.class_names[i] in images]
-    #
-    # image_mask = np.isin(mn.train_labels, N)
-    # im = image_mask.reshape(len(image_mask,))
-    # X = mn.train_images[im]
-    #
-    # print("Images", len(X), X.shape)
-    #
-    # print(N)
-    #
-    # matching_images = []
-    # for n in N:
-    #     print(n)
-    #     display_mask = np.where(mn.train_labels == n)
-    #     match = mn.train_images[display_mask]
-    #     display_range = match[0:to_display]
-    #     for i in display_range:
-    #         img = np.array([[[255 - s, 255 - s, 255 - s] for s in r] for r in display_range[i]], dtype="u1")
-    #         fig = go.Image(z=img)
-    #         # fig.update_layout(height=250, width=250)
-    #         matching_images.append(dcc.Graph(id='ret-fig', figure=fig))
-    #
-    # im_row = dbc.Row(matching_images)
-    #
-    # return im_row
+
 
 
 

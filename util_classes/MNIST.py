@@ -9,7 +9,6 @@ from sklearn.metrics import confusion_matrix
 
 class MNISTBase():
     def __init__(self, n="numbers"):
-        print(n)
         self.name = n
         if n == 'fashion':
             self.class_names = ['T-shirt', 'Trouser', 'Pullover', 'Dress', 'Coat',
@@ -50,7 +49,6 @@ class MLP():
 
     def build_model(self):
         t_s = self.mnist.train_images.shape
-        print("Shape: ", t_s, type(t_s), t_s[1:], len(t_s))
 
         if len(t_s) > 3:
             self.mnist.train_images = tf.image.rgb_to_grayscale(self.mnist.train_images)
@@ -271,28 +269,35 @@ class ModCNN():
         self.model = self.build_model()
 
     def build_model(self):
-        model = tf.keras.models.Sequential()
-        model.add(layers.Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same',
-                         input_shape=(32, 32, 3)))
-        model.add(layers.Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+
+        model = models.Sequential()
+        if self.mnist.name == 'cifar10':
+            model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 3)))
+        else:
+            model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(28, 28, 1)))
+            self.mnist.train_images = self.mnist.train_images.reshape((self.mnist.train_images.shape[0], 28, 28, 1))
+            self.mnist.test_images = self.mnist.test_images.reshape((self.mnist.test_images.shape[0], 28, 28, 1))
         model.add(layers.MaxPooling2D((2, 2)))
-        model.add(layers.Dropout(0.2))
-        model.add(layers.Conv2D(64, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
-        model.add(layers.Conv2D(64, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+        model.add(layers.Dropout(0.1))
+        model.add(layers.Conv2D(64, (3, 3), activation='relu'))
         model.add(layers.MaxPooling2D((2, 2)))
-        model.add(layers.Dropout(0.2))
-        model.add(layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
-        model.add(layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
-        model.add(layers.MaxPooling2D((2, 2)))
-        model.add(layers.Dropout(0.2))
+        model.add(layers.Dropout(0.1))
+        model.add(layers.Conv2D(128, (3, 3), activation='relu'))
+        model.add(layers.Dropout(0.1))
         model.add(layers.Flatten())
+        model.add(layers.Dense(1024, activation='relu', kernel_initializer='he_uniform'))
+        model.add(layers.Dropout(0.1))
+        # model.add(layers.Dense(384, activation='relu', kernel_initializer='he_uniform'))
+        # model.add(layers.Dropout(0.2))
         model.add(layers.Dense(128, activation='relu', kernel_initializer='he_uniform'))
-        model.add(layers.Dropout(0.2))
+        model.add(layers.Dropout(0.1))
         model.add(layers.Dense(10, activation='softmax'))
         # compile model
-        opt = tf.keras.optimizers.SGD(lr=0.001, momentum=0.9)
+        # opt = tf.keras.optimizers.SGD(lr=0.001, momentum=0.9)
         print((model.summary()))
-        model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
+        model.compile(optimizer='adam',
+                      loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                      metrics=['accuracy'])
         return model
 
     def compile_model(self):
@@ -300,8 +305,9 @@ class ModCNN():
                       loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
                       metrics=['accuracy'])
 
-    def train_model(self, epochs=10):
-        self.model.fit(self.mnist.train_images, self.mnist.train_labels, epochs=epochs)
+    def train_model(self, epochs=30):
+        history = self.model.fit(self.mnist.train_images, self.mnist.train_labels, epochs=epochs)
+        return history
 
     def evaluate_model(self, verbosity=2):
         test_loss, test_accuracy = self.model.evaluate(self.mnist.test_images, self.mnist.test_labels, verbose=verbosity)

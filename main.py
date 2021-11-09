@@ -55,7 +55,6 @@ app.layout = html.Div([
               [Input('page-url', 'pathname')])
 def display_page(pathname):
     if pathname == '/show_images':
-        print("Hello")
         return show_images.layout
     if pathname == '/build':
         return build.layout
