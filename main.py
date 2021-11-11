@@ -5,7 +5,7 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 from app import app
 
-from apps import show_images, build
+from apps import show_images, build, tsne
 
 
 
@@ -27,7 +27,8 @@ navbar = dbc.Navbar(
             dbc.Collapse(
                 dbc.Nav(
                     [dbc.NavItem(dbc.NavLink("Training images", href="/show_images", disabled=False)),
-                    dbc.NavItem(dbc.NavLink("Build MLP", href="/build", disabled=False)),
+                    dbc.NavItem(dbc.NavLink("Output Layer", href="/build", disabled=False)),
+                     dbc.NavItem(dbc.NavLink("Show t-SNE", href="/tsne", disabled=False)),
                      ], className="ml-auto", navbar=True
                 ),
                 id="navbar-collapse2",
@@ -58,6 +59,8 @@ def display_page(pathname):
         return show_images.layout
     if pathname == '/build':
         return build.layout
+    if pathname == '/tsne':
+        return tsne.layout
     # if pathname == '/generate':
     #     return generate.layout(layers)
 

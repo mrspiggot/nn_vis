@@ -8,14 +8,16 @@ from sklearn.datasets import load_digits
 from sklearn.metrics.pairwise import pairwise_distances
 from sklearn.manifold._t_sne import (_joint_probabilities,
                                     _kl_divergence)
+import pickle
 
 RS = 20150101
-PERPLEXITY = 30
-EARLY_EXAGGERATION = 30.0
 
 class DisplayTSNE():
-    def __init__(self, name='sk_digits'):
+    def __init__(self, name='sk_digits', perplexity=30, early_exaggeration=12.0, dimensions=2):
         self.source = name
+        self.perplexity = perplexity
+        self.early_exaggeration = early_exaggeration
+        self.dimensions = dimensions
         self.anim_df = pd.DataFrame()
         self.X, self.y = self.get_data()
         self.static_points = self.static_data_chart()
@@ -43,7 +45,8 @@ class DisplayTSNE():
         return X, y
 
     def static_data_chart(self):
-        return TSNE(random_state=RS, perplexity=PERPLEXITY, early_exaggeration=EARLY_EXAGGERATION).fit_transform(self.X)
+        return TSNE(random_state=RS, n_components=self.dimensions, perplexity=self.perplexity,
+                    early_exaggeration=self.early_exaggeration).fit_transform(self.X)
 
     def _joint_probabilities_constant_sigma(self, D, sigma):
         P = np.exp(-D ** 2 / 2 * sigma ** 2)
@@ -92,12 +95,13 @@ class DisplayTSNE():
         return p, error, i
 
     def get_animation(self):
-        X_proj = TSNE(random_state=RS, perplexity=PERPLEXITY,
-              early_exaggeration=EARLY_EXAGGERATION,
+        X_proj = TSNE(random_state=RS, n_components=self.dimensions, perplexity=self.perplexity,
+              early_exaggeration=self.early_exaggeration,
               learning_rate=500,
               n_iter_without_progress=100000).fit_transform(self.X)
 
-        X_iter = np.dstack(position.reshape(-1, 2)
+
+        X_iter = np.dstack(position.reshape(-1, self.dimensions)
                            for position in self.positions)
 
         index = pd.MultiIndex.from_product([range(s) for s in X_iter.shape])
@@ -105,15 +109,33 @@ class DisplayTSNE():
         mdim = mdim.unstack().swaplevel().sort_index()
         mdim.index.names = ['co-ord', 'i']
 
+        df2 = mdim.stack().unstack(level=0)
 
         label_df = pd.DataFrame(data=self.y)
         label_df.columns = ['label']
 
 
-        firsts = mdim.index.get_level_values('i')
-        mdim['label'] = label_df.loc[firsts].values
+        firsts = df2.index.get_level_values('i')
+        df2['label'] = label_df.loc[firsts].values
 
-        return X_proj, mdim
+        df2.index.names = ['image', 'iteration']
+        if self.dimensions == 2:
+            df2.columns = ['x', 'y', 'labels']
+        elif self.dimensions == 3:
+            df2.columns = ['x', 'y', 'z', 'labels']
+        else:
+            print('"Dimensions" must be 2 or 3')
 
-ts = DisplayTSNE()
-print(ts.anim_df, ts.anim_df.info())
+        return X_proj, df2
+
+    def pickle_data(self, fname="tsne"):
+        p_dict = {}
+        p_dict['perplexity'] = self.perplexity
+        p_dict['early_exaggeration'] = self.early_exaggeration
+        p_dict['dimensions'] = self.dimensions
+        p_dict['anim_df'] = self.anim_df
+
+        fn = fname + "_p_" + str(self.perplexity) + "_e_" + str(self.early_exaggeration) + "_d_" + str(self.dimensions) + ".pickle"
+        with open(fn, 'wb') as pkl:
+            pickle.dump(p_dict, pkl, protocol=pickle.HIGHEST_PROTOCOL)
+

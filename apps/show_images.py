@@ -34,7 +34,7 @@ layout = html.Div([
     ]),
     dbc.Row([
         dbc.Col(
-            dcc.Dropdown(options =type_list, id="type-dd", value='fashion'),
+            dcc.Dropdown(options =type_list, id="type-dd", value='fashion', className='dash-bootstrap'),
             width=2, lg={'size': 2, "offset": 3}
         ),
         dbc.Col(
@@ -42,7 +42,7 @@ layout = html.Div([
             width=2,lg={'size': 2,  "offset": 0}
         ),
         dbc.Col(
-            dcc.Slider(min=1, max=6, marks=slider_dict, id="size-slider", value=3),
+            dcc.Slider(min=1, max=6, marks=slider_dict, id="size-slider", value=2),
             width=3, lg={'size': 2,  "offset": 0}
         ),
     ]),
@@ -64,16 +64,27 @@ def draw_garments(amount, size, i_type):
         for i in range(int(amount_dict[amount])):
             fig = make_subplots(1, 1)
             fig.add_trace(go.Image(z=ti[i]), 1, 1)
-            fig.update_layout(height=np.sqrt(size)*180, width=np.sqrt(size)*180, title=mn.class_names[mn.test_labels[i][0]])
+            fig.update_layout(height=np.sqrt(size)*180, width=np.sqrt(size)*180, title=mn.class_names[mn.test_labels[i][0]],
+                              plot_bgcolor='#222', paper_bgcolor='#222', font=dict(size=12, color='white'))
             matching_images.append(dcc.Graph(id='ret-fig', figure=fig))
 
+    elif i_type == 'fashion':
+        for i in range(int(amount_dict[amount])):
+            fig = make_subplots(1, 1)
+            img = np.array([[[255-s, 255-s, 255-s] for s in r] for r in ti[i]], dtype="u1")
+            fig.add_trace(go.Image(z=img), 1, 1)
+            fig.update_layout(height=np.sqrt(size)*180, width=np.sqrt(size)*180, title=mn.class_names[mn.test_labels[i]],
+                              plot_bgcolor='#222', paper_bgcolor='#222', font=dict(size=12, color='white'))
+            matching_images.append(dcc.Graph(id='ret-fig', figure=fig))
     else:
         for i in range(int(amount_dict[amount])):
             fig = make_subplots(1, 1)
-            img = np.array([[[255 - s, 255 - s, 255 - s] for s in r] for r in ti[i]], dtype="u1")
+            img = np.array([[[s, s, s] for s in r] for r in ti[i]], dtype="u1")
             fig.add_trace(go.Image(z=img), 1, 1)
-            fig.update_layout(height=np.sqrt(size)*180, width=np.sqrt(size)*180, title=mn.class_names[mn.test_labels[i]])
+            fig.update_layout(height=np.sqrt(size)*180, width=np.sqrt(size)*180, title=mn.class_names[mn.test_labels[i]],
+                              plot_bgcolor='#222', paper_bgcolor='#222', font=dict(size=12, color='white'))
             matching_images.append(dcc.Graph(id='ret-fig', figure=fig))
+
 
     im_row = dbc.Row(matching_images)
 

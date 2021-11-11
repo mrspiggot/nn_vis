@@ -22,12 +22,13 @@ import pandas as pd
 
 MAX_NEURONS = 784
 HDF5_DIRECTORY = Path("assets")
+amount_dict = {1: '10', 2: '20', 3: '50', 4: '100', 5: '200'}
 
 
 layout = html.Div([
     dbc.Row([
         dbc.Col([
-            html.H4("Pickle Uploader"),
+            html.H4("Confusion matrix Uploader"),
             dcc.Upload(
                 id='upload-data',
                 children=html.Div([
@@ -46,30 +47,42 @@ layout = html.Div([
                 },
                 multiple=True
             ),
+            html.P("Results to display"),
+            dcc.Slider(min=1, max=5, marks=amount_dict, id="limit-slider", value=2),
             ], width=2
         ),
         dbc.Col([
             dt.DataTable(id='output-data-upload', style_data_conditional=[
                              {
                                  'if': {'row_index': 'odd'},
-                                 'backgroundColor': 'rgb(220, 220, 220)',
-                             }
-                         ]),
-            dbc.Alert("Click the table", id='tbl_out'),
+                                 'backgroundColor': 'rgb(40, 40, 40)',
+                             },
+                            {
+                                'if': {'row_index': 'even'},
+                                'backgroundColor': 'rgb(50, 50, 50)',
+                            }
+                         ],
+                         style_header={
+                             'backgroundColor': 'rgb(10, 10, 10)',
+                             'color': 'white'
+                         },
+                         ),
+            dbc.Alert("Drag a pickle file to the drop-site on the left and then click a cell on the table", id='tbl_out'),
         ], width={"size": 8, "offset": 0})
     ]),
     dbc.Row([
         dbc.Col([html.H4(id='conf-result')], width=12, style={'textAlign': 'center'}),
-        dcc.Loading(html.Div(id='view-results', children=[]), type='cube', fullscreen=True),
+        dcc.Loading(html.Div(id='view-results', children=[]), type='cube', fullscreen=True, className='dash-bootstrap'),
     ])
 ])
 
 @app.callback([Output('tbl_out', 'children'),
                Output('view-results', 'children'),
-               Output('conf-result', 'children'),],
-               Input('output-data-upload', 'active_cell'),
+               Output('conf-result', 'children')],
+               [Input('output-data-upload', 'active_cell'),
+               Input('limit-slider', 'value')],
                State('upload-data', 'filename'))
-def update_graphs(active_cell, fname):
+def update_graphs(active_cell, limit, fname):
     if active_cell == None:
         active_cell['row'] = 0
         active_cell['column'] = 0
@@ -99,9 +112,11 @@ def update_graphs(active_cell, fname):
         if nn_pred == r_est:
             # print("Prediction: ", mn.class_names[n_est])
             if tl[i] == n_est:
-                image_list.append(i)
+                if match <= int(amount_dict[limit]):
+                    image_list.append(i)
                 match += 1
         i += 1
+
 
     matching_images = []
     if nn_d['Type'] == 'cifar10':
@@ -112,9 +127,9 @@ def update_graphs(active_cell, fname):
             fig = make_subplots(1, 2)
             fig.add_trace(go.Image(z=ti[i]), 1, 1)
             fig.add_trace(go.Bar(x=mc, y=predictions[i], marker_color=colors), 1, 2)
-            fig.update_layout(height=300, width=500)
+            fig.update_layout(height=300, width=500, plot_bgcolor='#222', paper_bgcolor='#222', font_color='#29E')
             matching_images.append(dcc.Graph(id='ret-fig', figure=fig))
-    else:
+    elif nn_d['Type'] == 'fashion':
         for i in image_list:
             colors = ['blue'] * 10
             colors[n_est] = 'green'
@@ -125,7 +140,20 @@ def update_graphs(active_cell, fname):
             fig.add_trace(go.Image(z=img), 1, 1)
             # px.imshow(mn.test_images[i], color_continuous_scale='gray')
             fig.add_trace(go.Bar(x=mc, y=predictions[i], marker_color=colors), 1, 2)
-            fig.update_layout(height=250, width=480)
+            fig.update_layout(height=250, width=480, plot_bgcolor='#222', paper_bgcolor='#222', font_color='#29E')
+            matching_images.append(dcc.Graph(id='ret-fig', figure=fig))
+    else:
+        for i in image_list:
+            colors = ['blue'] * 10
+            colors[n_est] = 'green'
+            colors[r_est] = 'red'
+            fig = make_subplots(1, 2)
+            img = np.array([[[s, s, s] for s in r] for r in ti[i]], dtype="u1")
+
+            fig.add_trace(go.Image(z=img), 1, 1)
+            # px.imshow(mn.test_images[i], color_continuous_scale='gray')
+            fig.add_trace(go.Bar(x=mc, y=predictions[i], marker_color=colors), 1, 2)
+            fig.update_layout(height=250, width=480, plot_bgcolor='#222', paper_bgcolor='#222', font_color='#29E')
             matching_images.append(dcc.Graph(id='ret-fig', figure=fig))
 
     im_row = dbc.Row(matching_images)

@@ -380,6 +380,31 @@ class ModCNN():
         else:
             self.model = tf.keras.models.load_model(fname)
 
+class NN_layers():
+    def __init__(self, fname):
+        self.name = self.parse_fname(fname)
+        self.model = self.load_model(fname)
+
+
+    def parse_fname(self, fname):
+        if 'cifar10' in fname:
+            return 'cifar10'
+        elif 'fashion' in fname:
+            return 'fashion'
+        else:
+            return 'numbers'
+
+    def load_model(self, fname):
+        print(fname)
+        return models.load_model(fname)
+
+    def show_conv_layers(self):
+        for layer in self.model.layers:
+            if 'conv' not in layer.name:
+                continue
+            filters, biases = layer.get_weights()
+            print(layer.name, filters.shape)
+
 
 
 
