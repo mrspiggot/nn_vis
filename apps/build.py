@@ -72,7 +72,7 @@ layout = html.Div([
     ]),
     dbc.Row([
         dbc.Col([html.H4(id='conf-result')], width=12, style={'textAlign': 'center'}),
-        dcc.Loading(html.Div(id='view-results', children=[]), type='cube', fullscreen=True, className='dash-bootstrap'),
+        dcc.Loading(html.Div(id='view-results', children=[], className='dash-bootstrap'), type='cube', fullscreen=True, className='dash-bootstrap'),
     ])
 ])
 
@@ -86,6 +86,9 @@ def update_graphs(active_cell, limit, fname):
     if active_cell == None:
         active_cell['row'] = 0
         active_cell['column'] = 0
+
+    if fname == None:
+        fname = ['numbersOutput_93_20211108_101910.pickle']
 
     fname = os.path.join(os.getcwd(), "assets", fname[0])
 
@@ -158,8 +161,13 @@ def update_graphs(active_cell, limit, fname):
 
     im_row = dbc.Row(matching_images)
 
+    if match == 1:
+        t_item = ' item '
+    else:
+        t_item = ' items '
+
     title_str = "Model predicted " + estimate + ", actual image: " + reality + ". " + str(
-        match) + " items incorrectly predicted. Prediction red, actual image green; in probability charts below."
+        match) + t_item + "incorrectly predicted. Prediction red, actual image green; in probability charts below."
 
     return str(active_cell), im_row, title_str
 

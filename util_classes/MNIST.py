@@ -384,6 +384,7 @@ class NN_layers():
     def __init__(self, fname):
         self.name = self.parse_fname(fname)
         self.model = self.load_model(fname)
+        self.conv_layers = self.get_conv_layers()
 
 
     def parse_fname(self, fname):
@@ -404,6 +405,21 @@ class NN_layers():
                 continue
             filters, biases = layer.get_weights()
             print(layer.name, filters.shape)
+
+    def get_conv_layers(self):
+        l_dict = {}
+        i=0
+        for layer in self.model.layers:
+            if 'conv' not in layer.name:
+                continue
+            filters, biases = layer.get_weights()
+            fmin, fmax = filters.min(), filters.max()
+            filters = (filters-fmin)/(fmax-fmin)
+            l_dict[i] = filters
+            i+=1
+
+        return l_dict
+
 
 
 

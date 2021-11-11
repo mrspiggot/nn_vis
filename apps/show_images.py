@@ -15,7 +15,7 @@ from util_classes.MNIST import MNISTBase
 mn = MNISTBase('fashion')
 
 slider_dict = {1: 'Tiny', 2: "V-Small", 3: 'Small', 4: 'Med', 5: 'Large', 6: 'Huge'}
-amount_dict = {1: '10', 2: '20', 3: '50', 4: '100', 5: '200'}
+amount_dict = {1: '16', 2: '32', 3: '64', 4: '128', 5: '256'}
 type_list= [{'label': 'Numbers', 'value': 'numbers'}, {'label': 'Fashion', 'value': 'fashion'}, {'label': 'CIFAR 10', 'value': 'cifar10'}]
 random_dict = {1: 'Ordered', 2: 'Random'}
 
@@ -28,7 +28,7 @@ for item in mn.class_names:
 
 layout = html.Div([
     dbc.Row([
-        dbc.Col([html.P("Type to display")], width=2, style={'textAlign': 'center'}, lg={'size': 2, "offset": 3}),
+        dbc.Col([html.P("Dataset to display")], width=2, style={'textAlign': 'center'}, lg={'size': 2, "offset": 3}),
         dbc.Col([html.P("Amount to display")], width=2, style={'textAlign': 'center'}, lg={'size': 2,  "offset": 0}),
         dbc.Col([html.P("Img. Size")], width=2, style={'textAlign': 'center'}),
     ]),
@@ -42,7 +42,7 @@ layout = html.Div([
             width=2,lg={'size': 2,  "offset": 0}
         ),
         dbc.Col(
-            dcc.Slider(min=1, max=6, marks=slider_dict, id="size-slider", value=2),
+            dcc.Slider(min=1, max=6, marks=slider_dict, id="size-slider", value=1),
             width=3, lg={'size': 2,  "offset": 0}
         ),
     ]),
