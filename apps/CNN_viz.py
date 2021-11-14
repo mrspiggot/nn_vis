@@ -81,10 +81,11 @@ def update_output(fname, click, l1, l2):
 
     for i in range(l.shape[3]):
         f = l[:, :, :, i]
+        im_tit = "Filter " + str(i)
         fig = make_subplots(1, 1)
         img = np.array([[[255*s, 255*s, 255*s] for s in r] for r in f[:,:,0]], dtype="u1")
         fig.add_trace(go.Image(z=img), 1, 1)
-        fig.update_layout(height=np.sqrt(size) * 180, width=np.sqrt(size) * 180,
+        fig.update_layout(height=np.sqrt(size) * 180, width=np.sqrt(size) * 180, title=im_tit,
                           plot_bgcolor='#222', paper_bgcolor='#222', font=dict(size=12, color='white'))
         l0_filter_list.append(dcc.Graph(id='ret-fig', figure=fig))
 

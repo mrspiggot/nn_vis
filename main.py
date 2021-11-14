@@ -5,7 +5,7 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 from app import app
 
-from apps import show_images, build, tsne, CNN_viz
+from apps import show_images, build, tsne, CNN_viz, CNN_Embedding
 
 
 
@@ -65,6 +65,8 @@ def display_page(pathname):
         return tsne.layout
     if pathname == '/cnn':
         return CNN_viz.layout
+    if pathname == '/embed':
+        return CNN_Embedding.layout
     # if pathname == '/generate':
     #     return generate.layout(layers)
 
