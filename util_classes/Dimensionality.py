@@ -9,6 +9,7 @@ from sklearn.metrics.pairwise import pairwise_distances
 from sklearn.manifold._t_sne import (_joint_probabilities,
                                     _kl_divergence)
 import pickle
+from util_classes.MNIST import NN_layers, MNISTBase
 
 RS = 20150101
 
@@ -41,7 +42,30 @@ class DisplayTSNE():
                            for i in range(10)])
             y = np.hstack([digits.target[digits.target == i]
                            for i in range(10)])
+        elif self.source == 'fashion':
+            nn = NN_layers("fashionCNN20211108_095455.hdf5")
+            mn = MNISTBase(nn.name)
 
+            X = nn.dense_layers(mn.test_images)
+            y = mn.test_labels
+        elif self.source == 'cifar10':
+            nn = NN_layers("cifar10CNN20211108_004852.hdf5")
+            mn = MNISTBase(nn.name)
+
+            X = nn.dense_layers(mn.test_images)
+            y = mn.test_labels
+
+        else:
+            nn = NN_layers("numbersCNN20211108_101910.hdf5")
+            mn = MNISTBase(nn.name)
+
+            X = nn.dense_layers(mn.test_images)
+            y = mn.test_labels
+
+        X = X[:3500,:]
+        y = y[:3500]
+        print("X", X.shape)
+        print("y", y.shape)
         return X, y
 
     def static_data_chart(self):
@@ -111,7 +135,26 @@ class DisplayTSNE():
 
         df2 = mdim.stack().unstack(level=0)
 
-        label_df = pd.DataFrame(data=self.y)
+        if self.source=='fashion':
+            class_names = ['T-shirt', 'Trouser', 'Pullover', 'Dress', 'Coat',
+                           'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
+            names = []
+            for i in self.y:
+                names.append(class_names[i])
+
+            label_df = pd.DataFrame(data=names)
+        elif self.source=='cifar10':
+            class_names = ['airplane', 'automobile', 'bird', 'cat', 'deer',
+               'dog', 'frog', 'horse', 'ship', 'truck']
+            names = []
+            print("In Cifar", type(self.y), self.y.shape)
+            for i in self.y.reshape(-1):
+                names.append(class_names[i])
+
+            label_df = pd.DataFrame(data=names)
+
+        else:
+            label_df = pd.DataFrame(data=self.y)
         label_df.columns = ['label']
 
 
@@ -123,6 +166,8 @@ class DisplayTSNE():
             df2.columns = ['x', 'y', 'labels']
         elif self.dimensions == 3:
             df2.columns = ['x', 'y', 'z', 'labels']
+        elif self.dimensions == 1:
+            df2.columns = ['y', 'labels']
         else:
             print('"Dimensions" must be 2 or 3')
 

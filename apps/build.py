@@ -17,6 +17,7 @@ import os
 import dash_table as dt
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
+import plotly.express as px
 
 import pandas as pd
 
@@ -68,7 +69,11 @@ layout = html.Div([
                          },
                          ),
             dbc.Alert("Drag a pickle file to the drop-site on the left and then click a cell on the table", id='tbl_out'),
-        ], width={"size": 8, "offset": 0})
+        ], width={"size": 5, "offset": 0}),
+        dbc.Col([
+            dcc.Graph(id='hist-fig')
+        ],
+        width={"size": 5, "offset": 0})
     ]),
     dbc.Row([
         dbc.Col([html.H4(id='conf-result')], width=12, style={'textAlign': 'center'}),
@@ -83,7 +88,9 @@ layout = html.Div([
                Input('limit-slider', 'value')],
                State('upload-data', 'filename'))
 def update_graphs(active_cell, limit, fname):
+
     if active_cell == None:
+        active_cell=dict()
         active_cell['row'] = 0
         active_cell['column'] = 0
 
@@ -106,6 +113,7 @@ def update_graphs(active_cell, limit, fname):
     mc = mn.class_names
     n_est = active_cell['row']
     r_est = active_cell['column']-1
+
 
     i = 0
     match = 0
@@ -172,21 +180,48 @@ def update_graphs(active_cell, limit, fname):
     return str(active_cell), im_row, title_str
 
 @app.callback([Output('output-data-upload', 'data'),
-               Output('output-data-upload', 'columns')],
+               Output('output-data-upload', 'columns'),
+               Output('hist-fig', 'figure')
+               ],
               Input('upload-data', 'contents'),
               State('upload-data', 'filename'),
               State('upload-data', 'last_modified'))
 def update_output(list_of_contents, list_of_names, list_of_dates):
-    fname = os.path.join(os.getcwd(), "assets", list_of_names[0])
 
-    with open(fname, 'rb') as file:
-        nn_d = pickle.load(file)
+    if list_of_names == None:
+        d = {'Loss': [0], 'Accuracy': [0], 'Validation Loss': [0], 'Validation Accuracy': [0]}
+        title = "Load a 'Pickle' file"
+    else:
+        fname = os.path.join(os.getcwd(), "assets", list_of_names[0])
+        with open(fname, 'rb') as file:
+            nn_d = pickle.load(file)
+            d = {'Loss': nn_d['Historic Loss'], 'Accuracy': nn_d['Historic Accuracy'],
+                 'Validation Loss': nn_d['Validation Loss'], 'Validation Accuracy': nn_d['Validation Accuracy']}
 
-    mn = MNISTBase(nn_d['Type'])
-    conf_df = pd.DataFrame(nn_d['Confusion'], columns=nn_d['Labels'], index=nn_d['Labels'])
-    conf_df.insert(0, "id", nn_d['Labels'])
-    data = conf_df.to_dict('records')
-    columns= [{"name": i, "id": i} for i in conf_df.columns]
+        mn = MNISTBase(nn_d['Type'])
+        conf_df = pd.DataFrame(nn_d['Confusion'], columns=nn_d['Labels'], index=nn_d['Labels'])
+        conf_df.insert(0, "id", nn_d['Labels'])
+        data = conf_df.to_dict('records')
+        columns= [{"name": i, "id": i} for i in conf_df.columns]
+        title = "Test Accuracy " + str(round(nn_d['Test Accuracy'] * 100, 2)) + "%"
 
-    return data, columns
+
+    train_acc = "Train Acc. = " + str(round(d['Accuracy'][-1] * 100, 2)) + "%"
+    val_acc = "Val. Acc. = " + str(round(d['Validation Accuracy'][-1] * 100, 2)) + "%"
+    print(train_acc)
+    df = pd.DataFrame(d)
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=df.index.values, y=df['Loss'], name='Training Cost', line=dict(color='firebrick')))
+    fig.add_trace(go.Scatter(x=df.index.values, y=df['Accuracy'], name='Training Accuracy', line=dict(color='red', dash='dash')))
+    fig.add_trace(go.Scatter(x=df.index.values, y=df['Validation Loss'], name='Validation Cost', line=dict(color='royalblue')))
+    fig.add_trace(go.Scatter(x=df.index.values, y=df['Validation Accuracy'], name='Validation Accuracy', line=dict(color='cyan', dash='dash')))
+    fig.add_annotation(x=2+len(d['Loss'])/5, y=1.5, text=train_acc, font=dict(color='red', size=20))
+    fig.add_annotation(x=2+len(d['Loss'])/5, y=1.2, text=val_acc, font=dict(color='cyan', size=20))
+    fig.update_layout(font=dict(color='#58C'), height=420, title=title, xaxis_title='Epoch', yaxis_title="Loss & Accuracy Metrics",
+                      plot_bgcolor='#222', paper_bgcolor='#222', xaxis = dict(showline=True))
+    fig.update_xaxes(gridwidth=0.2, gridcolor='gray')
+    fig.update_yaxes(gridwidth=0.2, gridcolor='gray')
+
+
+    return data, columns, fig
 

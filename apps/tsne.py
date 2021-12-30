@@ -71,15 +71,22 @@ def display_tse_bubble(fname, speed):
     df = df.reset_index()
     df['labels'] = df['labels'].astype(str)
 
-    xmin = df['x'].min()
-    xmax = df['x'].max()
+
     ymin = df['y'].min()
     ymax = df['y'].max()
 
     if di == 2:
+        xmin = df['x'].min()
+        xmax = df['x'].max()
         fig = px.scatter(df, x='x', y='y', animation_frame='iteration', color='labels', height=950, width=1600,
                      range_x=[xmin, xmax], range_y=[ymin, ymax])
+
+    elif di == 1:
+        fig = px.bar(df, x='labels', y='y', animation_frame='iteration', color='labels', height=950, width=1600,
+                     range_y=[ymin, ymax])
     else:
+        xmin = df['x'].min()
+        xmax = df['x'].max()
         zmin = df['z'].min()
         zmax = df['z'].max()
         fig = px.scatter_3d(df, x='x', y='y', z='z', animation_frame='iteration', color='labels', height=950, width=1600,

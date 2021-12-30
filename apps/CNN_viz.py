@@ -12,6 +12,7 @@ import os
 import dash_table as dt
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
+import plotly.express as px
 
 import pandas as pd
 
@@ -77,54 +78,82 @@ def update_output(fname, click, l1, l2):
     im_row_l = []
 
     l = cl[0]
+    channel_l = [0, l1, l2]
+    # print(channel_l)
+
+    title_list = []
+    for n in range(len(cl)):
+        # print(type(cl), type(cl[n]), cl[n].shape)
+        # print(cl[n].min(), cl[n].max())
+        l_tit = "Layer " + str(n)
+        tit = dbc.Row(dbc.Col(html.H5(l_tit), width={"size": 6, "offset": 2, "align": "center"}))
+        fi = cl[n]
+        # print("fi", type(fi), fi.shape, n, channel_l[n])
+        x = (255*fi[:,:, channel_l[n],:]).astype(int)
+        # print(x, x.shape)
+        # for m in range(x.shape[2]):
+        #     print(x[:,:,m])
+
+        fig = px.imshow(x, facet_col=2, binary_string=True, facet_col_wrap=8, height=1200*(n+1), width=1800,
+                        facet_row_spacing=0.001,  # default is 0.07 when facet_col_wrap is used
+                        facet_col_spacing=0.005,  # default is 0.03
+                        )
+        fig.update_layout(plot_bgcolor='#222', paper_bgcolor='#222', font=dict(size=12, color='white'))
+        for i in range(cl[n].shape[3]):
+            fig.layout.annotations[i]['text'] = 'filter %d' % i
+        title_list.append(dbc.Row(html.H4(tit)))
+        title_list.append(dcc.Graph(id='embed-facet', figure=fig))
 
 
-    for i in range(l.shape[3]):
-        f = l[:, :, :, i]
-        im_tit = "Filter " + str(i)
-        fig = make_subplots(1, 1)
-        img = np.array([[[255*s, 255*s, 255*s] for s in r] for r in f[:,:,0]], dtype="u1")
-        fig.add_trace(go.Image(z=img), 1, 1)
-        fig.update_layout(height=np.sqrt(size) * 180, width=np.sqrt(size) * 180, title=im_tit,
-                          plot_bgcolor='#222', paper_bgcolor='#222', font=dict(size=12, color='white'))
-        l0_filter_list.append(dcc.Graph(id='ret-fig', figure=fig))
+    # for i in range(l.shape[3]):
+    #     f = l[:, :, :, i]
+    #     im_tit = "Filter " + str(i)
+    #     fig = make_subplots(1, 1)
+    #     img = np.array([[[255*s, 255*s, 255*s] for s in r] for r in f[:,:,0]], dtype="u1")
+    #     fig.add_trace(go.Image(z=img), 1, 1)
+    #     fig.update_layout(height=np.sqrt(size) * 180, width=np.sqrt(size) * 180, title=im_tit,
+    #                       plot_bgcolor='#222', paper_bgcolor='#222', font=dict(size=12, color='white'))
+    #     l0_filter_list.append(dcc.Graph(id='ret-fig', figure=fig))
+    #
+    # itxt = dbc.Row(dbc.Col(html.H1("Layer0"), width={"size": 6, "offset": 5}))
+    # images = dbc.Row(l0_filter_list)
+    # iRow = dbc.Row([itxt, images])
+    # im_row_l.append(iRow)
+    #
+    # l1_filter_list = []
+    # l = cl[1]
+    # for i in range(l.shape[3]):
+    #     f = l[:, :, :, i]
+    #     fig = make_subplots(1, 1)
+    #     img = np.array([[[255*s, 255*s, 255*s] for s in r] for r in f[:,:,l1]], dtype="u1")
+    #     fig.add_trace(go.Image(z=img), 1, 1)
+    #     fig.update_layout(height=np.sqrt(size) * 180, width=np.sqrt(size) * 180,
+    #                       plot_bgcolor='#222', paper_bgcolor='#222', font=dict(size=12, color='white'))
+    #     l1_filter_list.append(dcc.Graph(id='ret-fig', figure=fig))
+    #
+    # itxt = dbc.Row(dbc.Col(html.H1("Layer1"), width={"size": 6, "offset": 5}))
+    # images = dbc.Row(l1_filter_list)
+    # iRow = dbc.Row([itxt, images])
+    # im_row_l.append(iRow)
+    #
+    # l = cl[2]
+    # l3_filter_list = []
+    # for i in range(l.shape[3]):
+    #     f = l[:, :, :, i] * 255
+    #     fig = make_subplots(1, 1)
+    #     img = np.array([[[255-s, 255-s, 255-s] for s in r] for r in f[:,:,l2]], dtype="u1")
+    #     fig.add_trace(go.Image(z=img), 1, 1)
+    #     fig.update_layout(height=np.sqrt(size) * 180, width=np.sqrt(size) * 180,
+    #                       plot_bgcolor='#222', paper_bgcolor='#222', font=dict(size=12, color='white'))
+    #     l3_filter_list.append(dcc.Graph(id='ret-fig', figure=fig))
+    #
+    # itxt = dbc.Row(dbc.Col(html.H1("Layer2"), width={"size": 2, "offset": 5}))
+    # images = dbc.Row(l3_filter_list)
+    # iRow = dbc.Row([itxt, images])
 
-    itxt = dbc.Row(dbc.Col(html.H1("Layer0"), width={"size": 6, "offset": 5}))
-    images = dbc.Row(l0_filter_list)
-    iRow = dbc.Row([itxt, images])
+
+    iRow = dbc.Row()
     im_row_l.append(iRow)
 
-    l1_filter_list = []
-    l = cl[1]
-    for i in range(l.shape[3]):
-        f = l[:, :, :, i]
-        fig = make_subplots(1, 1)
-        img = np.array([[[255*s, 255*s, 255*s] for s in r] for r in f[:,:,l1]], dtype="u1")
-        fig.add_trace(go.Image(z=img), 1, 1)
-        fig.update_layout(height=np.sqrt(size) * 180, width=np.sqrt(size) * 180,
-                          plot_bgcolor='#222', paper_bgcolor='#222', font=dict(size=12, color='white'))
-        l1_filter_list.append(dcc.Graph(id='ret-fig', figure=fig))
 
-    itxt = dbc.Row(dbc.Col(html.H1("Layer1"), width={"size": 6, "offset": 5}))
-    images = dbc.Row(l1_filter_list)
-    iRow = dbc.Row([itxt, images])
-    im_row_l.append(iRow)
-
-    l = cl[2]
-    l3_filter_list = []
-    for i in range(l.shape[3]):
-        f = l[:, :, :, i] * 255
-        fig = make_subplots(1, 1)
-        img = np.array([[[255-s, 255-s, 255-s] for s in r] for r in f[:,:,l2]], dtype="u1")
-        fig.add_trace(go.Image(z=img), 1, 1)
-        fig.update_layout(height=np.sqrt(size) * 180, width=np.sqrt(size) * 180,
-                          plot_bgcolor='#222', paper_bgcolor='#222', font=dict(size=12, color='white'))
-        l3_filter_list.append(dcc.Graph(id='ret-fig', figure=fig))
-
-    itxt = dbc.Row(dbc.Col(html.H1("Layer2"), width={"size": 2, "offset": 5}))
-    images = dbc.Row(l3_filter_list)
-    iRow = dbc.Row([itxt, images])
-    im_row_l.append(iRow)
-
-
-    return title, im_row_l
+    return title, title_list

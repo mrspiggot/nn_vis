@@ -16,6 +16,7 @@ import os
 import dash_table as dt
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
+import plotly.express as px
 
 import pandas as pd
 
@@ -60,7 +61,7 @@ layout = html.Div([
             multiple=True
         ), width={"size": 2, "offset": 0}),
         dcc.Loading(html.Div(id='view-sample', children=[]), type='cube', fullscreen=True, className='dash-bootstrap'),
-        dbc.Col(html.P("Choose layer for embedding")),
+        dbc.Col(html.P("Activation layer")),
         dbc.Col([dcc.Input(id='layer-ip', type='number', min=0, max=2, step=1, value=0)]),
         dbc.Col([dbc.Button("Display", id='embed-but', n_clicks=0, color="success")]),
     ]),
@@ -114,40 +115,41 @@ def update_output(fname, iname, click, l1):
             continue
         ixs.append(i)
 
-    print(ixs)
+    # layer_dict = nn.conv_layers
+
+
     outputs = [model.layers[i].output for i in ixs]
     model = Model(inputs=model.inputs, outputs=outputs)
     feature_maps = model.predict(np_img)
-    # print(feature_maps.shape, type(feature_maps))
+    print("Feature maps:", len(feature_maps), type(feature_maps))
 
     title_list = []
     n = 0
     for fmap in feature_maps:
-        print(fmap.shape, type(fmap))
+        print("Fmap", fmap.shape, type(fmap))
         fa = fmap.max()
         fi = fmap.min()
-        fmap = 255*(fmap-fi)/(fa-fi)
-        fmap = fmap.astype(int)
+        print("Min", fi, "Max", fa)
+        # fmap = 255*(fmap-fi)/(fa-fi)
+        # fmap = fmap.astype(int)
         l_tit = "Layer " + str(n) + " with " + str(fmap.shape[3]) + " filters"
         tit = dbc.Row(dbc.Col(html.H5(l_tit), width={"size": 6, "offset": 2, "align": "center"}))
+
         n+=1
-        embed_list = []
+        embed_img = fmap[0]
+        print("Shape", embed_img.shape)
+
+        fig = px.imshow((embed_img-fi)/(fa - fi), facet_col=2, binary_string=True, facet_col_wrap=8, height=1200*n, width=1800,
+                        facet_row_spacing=0.0001,  # default is 0.07 when facet_col_wrap is used
+                        facet_col_spacing=0.0005,  # default is 0.03
+                        )
+        fig.update_layout(plot_bgcolor='#222', paper_bgcolor='#222', font=dict(size=12, color='white'))
+        title_list.append(dbc.Row(html.H4(tit)))
+        title_list.append(dcc.Graph(id='embed-facet', figure=fig))
         for i in range(fmap.shape[3]):
+            fig.layout.annotations[i]['text'] = 'filter %d' % i
 
-            fig = make_subplots(1,1)
-            embed_img = fmap[0, :, :, i]
-            print(embed_img.shape)
-            img = np.array([[[s, s, s] for s in r] for r in embed_img[:, :]], dtype="u1")
-            im_tit = "Output from filter " + str(i)
-            # img = np.array(embed_img, dtype="u1")
-            fig.add_trace(go.Image(z=img), 1, 1)
-            fig.update_layout(height=256, width=256, title=im_tit,
-                              plot_bgcolor='#222', paper_bgcolor='#222', font=dict(size=12, color='white'))
-            embed_list.append(dcc.Graph(id='ret-fig', figure=fig))
-
-        title_list.append(tit)
-        title_list.append(dbc.Row(embed_list))
 
     images = dbc.Row(title_list)
 
-    return title, images, img
+    return title, title_list, img

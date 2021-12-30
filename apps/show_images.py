@@ -38,7 +38,7 @@ layout = html.Div([
             width=2, lg={'size': 2, "offset": 3}
         ),
         dbc.Col(
-            dcc.Slider(min=1, max=5, marks=amount_dict, id="amount-slider", value=2),
+            dcc.Slider(min=1, max=5, marks=amount_dict, id="amount-slider", value=3),
             width=2,lg={'size': 2,  "offset": 0}
         ),
         dbc.Col(

@@ -1,11 +1,21 @@
 import tensorflow as tf
 from tensorflow.keras import datasets, layers, models
+from keras.preprocessing.image import load_img
+from keras.preprocessing.image import img_to_array
+from keras.models import Model
 
 # Helper libraries
 import numpy as np
+from numpy import expand_dims
 from datetime import datetime
 import pickle
 from sklearn.metrics import confusion_matrix
+from sklearn.utils import shuffle
+from tensorflow.python.ops.numpy_ops import np_config
+
+np_config.enable_numpy_behavior()
+
+import base64
 
 class MNISTBase():
     def __init__(self, n="numbers"):
@@ -45,6 +55,7 @@ class MLP():
         self.hidden_layers = hidden_layers
         self.activation = activation
         self.model = self.build_model()
+        self.history = None
 
 
     def build_model(self):
@@ -69,7 +80,27 @@ class MLP():
                       metrics=['accuracy'])
 
     def train_model(self, epochs=10):
-        self.model.fit(self.mnist.train_images, self.mnist.train_labels, epochs=epochs)
+        t_s = self.mnist.train_images.shape
+        if len(t_s) > 3:
+            sh = self.mnist.train_images.shape
+            X, y = shuffle(self.mnist.train_images.reshape(sh[0], sh[1],  sh[2]), self.mnist.train_labels.reshape(-1))
+            x_val = X[-5000:]
+            y_val = y[-5000:]
+            x_train = X[:-5000]
+            y_train = y[:-5000]
+
+        else:
+            print("X=", self.mnist.train_images.shape)
+            print("y=", self.mnist.train_labels.shape)
+
+            X, y = shuffle(self.mnist.train_images, self.mnist.train_labels)
+            x_val = X[-5000:]
+            y_val = y[-5000:]
+            x_train = X[:-5000]
+            y_train = y[:-5000]
+        history = self.model.fit(x_train, y_train, epochs=epochs, validation_data=(x_val, y_val))
+        self.history = history
+        return history
 
     def evaluate_model(self, verbosity=2):
         test_loss, test_accuracy = self.model.evaluate(self.mnist.test_images, self.mnist.test_labels, verbose=verbosity)
@@ -88,8 +119,10 @@ class MLP():
 
         return pred
 
-    def confusion_mat(self, pckl=False):
+    def confusion_mat(self, pckl=False, fname=""):
         cp = []
+        print("fname ", fname)
+
         predictions = self.prediction()
         for pred in predictions:
             cp.append(np.argmax(pred))
@@ -97,9 +130,12 @@ class MLP():
         conf_pred = np.array(cp)
 
         confusion = confusion_matrix(self.mnist.test_labels, conf_pred)
+        test_acc = confusion.trace() / confusion.sum()
         loss, acc = self.evaluate_model(verbosity=0)
         if pckl == True:
             now = datetime.now()
+
+
             mname = self.mnist.name + "MLPConfusion" + now.strftime("%Y%m%d_%H%M%S") + '.pickle'
             f = open(mname, "wb")
             pickle.dump(confusion, f)
@@ -114,8 +150,23 @@ class MLP():
             op_dict['Labels'] = self.mnist.class_names
             op_dict['Confusion'] = confusion
             op_dict['Prediction'] = predictions
-            mname = "../assets/" + self.mnist.name + "Output" + now.strftime("%Y%m%d_%H%M%S") + '.pickle'
-            f = open(mname, "wb")
+            op_dict['Historic Loss'] = self.history.history['loss']
+            op_dict['Historic Accuracy'] = self.history.history['accuracy']
+            op_dict['Validation Loss'] = self.history.history['val_loss']
+            op_dict['Validation Accuracy'] = self.history.history['val_accuracy']
+            op_dict['Test Accuracy'] = test_acc
+            if fname == "":
+
+                layer_list = ""
+                for neurons in self.hidden_layers:
+                    layer_list += (str(neurons)+"_")
+
+                fname = "../assets/" + self.mnist.name + "Output" + layer_list + now.strftime("%Y%m%d_%H%M%S") + "_" + str(test_acc) + '.pickle'
+            else:
+                fname = "assets/" + fname
+
+            print("fname2 ", fname)
+            f = open(fname, "wb")
             pickle.dump(op_dict, f)
             f.close()
 
@@ -151,6 +202,7 @@ class CNN():
         self.hidden_layers = hidden_layers
         self.activation = activation
         self.model = self.build_model()
+        self.history = None
 
     def build_model(self):
         t_s = self.mnist.train_images.shape
@@ -187,7 +239,14 @@ class CNN():
                       metrics=['accuracy'])
 
     def train_model(self, epochs=10):
-        self.model.fit(self.mnist.train_images, self.mnist.train_labels, epochs=epochs)
+        X, y = shuffle(self.mnist.train_images, self.mnist.train_labels)
+        x_val = X[-5000:]
+        y_val = y[-5000:]
+        x_train = X[:-5000]
+        y_train = y[:-5000]
+        history = self.model.fit(x_train, y_train, epochs=epochs, validation_data=(x_val, y_val))
+        self.history = history
+        return history
 
     def evaluate_model(self, verbosity=2):
         test_loss, test_accuracy = self.model.evaluate(self.mnist.test_images, self.mnist.test_labels, verbose=verbosity)
@@ -215,6 +274,7 @@ class CNN():
         conf_pred = np.array(cp)
 
         confusion = confusion_matrix(self.mnist.test_labels, conf_pred)
+        test_acc = confusion.trace() / confusion.sum()
         loss, acc = self.evaluate_model(verbosity=0)
         if pckl == True:
             now = datetime.now()
@@ -232,6 +292,11 @@ class CNN():
             op_dict['Labels'] = self.mnist.class_names
             op_dict['Confusion'] = confusion
             op_dict['Prediction'] = predictions
+            op_dict['Historic Loss'] = self.history.history['loss']
+            op_dict['Historic Accuracy'] = self.history.history['accuracy']
+            op_dict['Validation Loss'] = self.history.history['val_loss']
+            op_dict['Validation Accuracy'] = self.history.history['val_accuracy']
+            op_dict['Test Accuracy'] = test_acc
             mname = "../assets/" + self.mnist.name + "Output" + now.strftime("%Y%m%d_%H%M%S") + '.pickle'
             f = open(mname, "wb")
             pickle.dump(op_dict, f)
@@ -267,6 +332,7 @@ class ModCNN():
         self.hidden_layers = hidden_layers
         self.activation = activation
         self.model = self.build_model()
+        self.history = None
 
     def build_model(self):
 
@@ -306,7 +372,13 @@ class ModCNN():
                       metrics=['accuracy'])
 
     def train_model(self, epochs=30):
-        history = self.model.fit(self.mnist.train_images, self.mnist.train_labels, epochs=epochs)
+        X, y = shuffle(self.mnist.train_images, self.mnist.train_labels)
+        x_val = X[-5000:]
+        y_val = y[-5000:]
+        x_train = X[:-5000]
+        y_train = y[:-5000]
+        history = self.model.fit(x_train, y_train, epochs=epochs, validation_data=(x_val, y_val))
+        self.history = history
         return history
 
     def evaluate_model(self, verbosity=2):
@@ -335,6 +407,7 @@ class ModCNN():
         conf_pred = np.array(cp)
 
         confusion = confusion_matrix(self.mnist.test_labels, conf_pred)
+        test_acc = confusion.trace() / confusion.sum()
         loss, acc = self.evaluate_model(verbosity=0)
         if pckl == True:
             now = datetime.now()
@@ -352,6 +425,11 @@ class ModCNN():
             op_dict['Labels'] = self.mnist.class_names
             op_dict['Confusion'] = confusion
             op_dict['Prediction'] = predictions
+            op_dict['Historic Loss'] = self.history.history['loss']
+            op_dict['Historic Accuracy'] = self.history.history['accuracy']
+            op_dict['Validation Loss'] = self.history.history['val_loss']
+            op_dict['Validation Accuracy'] = self.history.history['val_accuracy']
+            op_dict['Test Accuracy'] = test_acc
             mname = "../assets/" + self.mnist.name + "Output" + now.strftime("%Y%m%d_%H%M%S") + '.pickle'
             f = open(mname, "wb")
             pickle.dump(op_dict, f)
@@ -385,6 +463,8 @@ class NN_layers():
         self.name = self.parse_fname(fname)
         self.model = self.load_model(fname)
         self.conv_layers = self.get_conv_layers()
+        self.img = None
+        self.testImgArr = None
 
 
     def parse_fname(self, fname):
@@ -419,6 +499,88 @@ class NN_layers():
             i+=1
 
         return l_dict
+
+    def load_image(self, image):
+        self.img = load_img(image, target_size=(28,28))
+        ti = img_to_array(self.img)
+        self.testImgArr = np.dot(ti[...,:3], [0.2989, 0.5870, 0.1140]).astype(int)
+        print("Loading ", image)
+
+    def display_conv1(self):
+        cnn_model = Model(inputs=self.model.inputs, outputs=self.model.layers[0].output)
+        t_img = expand_dims(self.testImgArr, axis=0)
+        activations = cnn_model.predict(t_img)
+        return activations
+
+    def display_3_convs(self):
+        ixs = [0, 3, 6]
+        outputs = [self.model.layers[i].output for i in ixs]
+        model = Model(inputs=self.model.inputs, outputs=outputs)
+        t_img = expand_dims(self.testImgArr, axis=0)
+        feature_maps = model.predict(t_img)
+        for fmap in feature_maps:
+            print(type(fmap), len(fmap), fmap.shape)
+
+    def dense_layers(self, y):
+        for i in range(len(self.model.layers)):
+            layer = self.model.layers[i]
+            # check for convolutional layer
+            if 'dense' not in layer.name:
+                continue
+            # summarize output shape
+            print(i, layer.name, layer.output.shape)
+
+        tsne_model = Model(inputs=self.model.inputs, outputs=self.model.layers[11].output)
+        tsne_activations = tsne_model.predict(y)
+
+        return tsne_activations
+
+
+class Ensemble():
+    def __init__(self, data_set, layer_list, activation='relu', epochs=30):
+        self.data_set = MNISTBase(data_set)
+        self.af = activation
+        self.ep = epochs
+        self.model_list = self.build_models(layer_list)
+        self.ec = self.ensemble_confusion()
+
+    def build_models(self, layer_list):
+        ml = []
+        for layers in layer_list:
+            mn = MNISTBase(self.data_set.name)
+            mod = MLP(mn, layers, self.af)
+            mod.compile_model()
+            mod.train_model(self.ep)
+            mod.evaluate_model(1)
+            mod.confusion_mat(True)
+            mod.save_model()
+            ml.append(mod)
+
+        return ml
+
+    def ensemble_confusion(self):
+
+        if len(self.data_set.test_images.shape) > 3:
+            ti = tf.image.rgb_to_grayscale(self.data_set.test_images)
+            pred = [tf.keras.Sequential([imodel.model, tf.keras.layers.Softmax()]).predict(ti) for imodel in self.model_list]
+        else:
+            pred = [tf.keras.Sequential([imodel.model, tf.keras.layers.Softmax()]).predict(self.data_set.test_images) for imodel in self.model_list]
+
+        pred = np.array(pred)
+        ensemble_prediction = np.sum(pred, axis=0)
+        ep = np.argmax(ensemble_prediction, axis=1)
+        confusion = confusion_matrix(self.data_set.test_labels, ep)
+        print(confusion, confusion.trace() / confusion.sum())
+        return confusion
+
+
+
+
+
+
+
+
+
 
 
 
