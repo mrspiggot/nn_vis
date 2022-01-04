@@ -746,6 +746,7 @@ class Ensemble():
         print(confusion, confusion.trace() / confusion.sum())
 
         test_acc = confusion.trace() / confusion.sum()
+        vote_acc = confusion_v.trace() / confusion_v.sum()
 
         now = datetime.now()
 
@@ -757,6 +758,7 @@ class Ensemble():
         op_dict['Confusion Votes'] = confusion_v
         op_dict['Prediction'] = ensemble_prediction
         op_dict['Test Accuracy'] = test_acc
+        op_dict['Vote Accuracy'] = vote_acc
         op_dict['Ensemble files'] = self.md['file']
 
 
@@ -825,6 +827,7 @@ class EnsembleCNN():
         print(confusion, confusion.trace() / confusion.sum())
 
         test_acc = confusion.trace() / confusion.sum()
+        vote_acc = confusion_v.trace() / confusion_v.sum()
 
         now = datetime.now()
 
@@ -836,6 +839,7 @@ class EnsembleCNN():
         op_dict['Confusion Votes'] = confusion_v
         op_dict['Prediction'] = ensemble_prediction
         op_dict['Test Accuracy'] = test_acc
+        op_dict['Vote Accuracy'] = vote_acc
         op_dict['Ensemble files'] = self.md['file']
 
 
@@ -922,6 +926,7 @@ class EnsembleCNNPooling():
         print("ep_v", ep_v, ep_v.shape)
 
         test_acc = confusion.trace() / confusion.sum()
+        vote_acc = confusion_v.trace() / confusion_v.sum()
 
         now = datetime.now()
 
@@ -933,6 +938,7 @@ class EnsembleCNNPooling():
         op_dict['Confusion Votes'] = confusion_v
         op_dict['Prediction'] = ensemble_prediction
         op_dict['Test Accuracy'] = test_acc
+        op_dict['Vote Accuracy'] = vote_acc
         op_dict['Ensemble files'] = self.md['file']
 
 

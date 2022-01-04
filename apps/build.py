@@ -138,7 +138,7 @@ def update_graphs(active_cell, limit, fname):
             fig = make_subplots(1, 2)
             fig.add_trace(go.Image(z=ti[i]), 1, 1)
             fig.add_trace(go.Bar(x=mc, y=predictions[i], marker_color=colors), 1, 2)
-            fig.update_layout(height=300, width=500, plot_bgcolor='#222', paper_bgcolor='#222', font_color='#29E')
+            fig.update_layout(height=250, width=480, plot_bgcolor='#222', paper_bgcolor='#222', font_color='#29E')
             matching_images.append(dcc.Graph(id='ret-fig', figure=fig))
     elif nn_d['Type'] == 'fashion':
         for i in image_list:

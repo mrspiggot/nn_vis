@@ -5,7 +5,7 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 from app import app
 
-from apps import show_images, build, tsne, CNN_viz, CNN_Embedding, mlp
+from apps import show_images, build, tsne, CNN_viz, CNN_Embedding, mlp, ensemble
 
 
 
@@ -31,6 +31,7 @@ navbar = dbc.Navbar(
                      dbc.NavItem(dbc.NavLink("CNN Filters", href="/cnn", disabled=False)),
                      dbc.NavItem(dbc.NavLink("CNN Activations", href="/embed", disabled=False)),
                      dbc.NavItem(dbc.NavLink("Output Layer", href="/build", disabled=False)),
+                     dbc.NavItem(dbc.NavLink("Ensemble", href="/ensemble", disabled=False)),
                      dbc.NavItem(dbc.NavLink("Show t-SNE", href="/tsne", disabled=False)),
                      ], className="ml-auto", navbar=True
                 ),
@@ -62,6 +63,8 @@ def display_page(pathname):
         return show_images.layout
     if pathname == '/build':
         return build.layout
+    if pathname == '/ensemble':
+        return ensemble.layout
     if pathname == '/tsne':
         return tsne.layout
     if pathname == '/cnn':
