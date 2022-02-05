@@ -88,6 +88,8 @@ def update_output(fname, iname, click, l1):
 
     fn = fname[0]
     im = iname[0]
+
+    print("Image name", im)
     title = ""
     images = dbc.Row([])
 

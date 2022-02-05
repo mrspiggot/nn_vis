@@ -73,9 +73,10 @@ layout = html.Div([
                 },
                 multiple=True
             ),width={"size": 3, "offset": 0}),
-        dbc.Col(daq.BooleanSwitch(id='ens-bool', on=True, label="Hard Vote", labelPosition="top", color="#29E"), width=1),
-        dbc.Col(html.P("Max. Images"), width = 1),
-        dbc.Col(dcc.Slider(min=1, max=5, marks=amount_dict, id="ens-slider", value=2),width=2),
+        dbc.Col([html.P("Hard Vote"),
+                 daq.BooleanSwitch(id='ens-bool', on=True, label="Fusion Scheme", labelPosition="right", vertical=True, color="#29E"),
+                 html.P("Aggregate")], width = 1),
+
         ]),
         dbc.Row([
             dbc.Col(
@@ -85,10 +86,7 @@ layout = html.Div([
         ])
     ])
 
-def get_component_content(nn_d, order, fname):
-    # # print(nn_d['Accuracy'], type(nn_d['Accuracy']))
-    # print(nn_d, type(nn_d))
-    # print(sorted(nn_d, key=lambda x: x['Accuracy'], reverse=True))
+def get_component_content(nn_d):
     if any(isinstance(el, list) for el in nn_d['Layer code']):
         # tstring = "[" + [str(i) for i in nn_d['Layer code'][0]] + "], "
         layer_string = [str(i) for i in nn_d['Layer code'][0]]
@@ -132,7 +130,7 @@ def get_component_content(nn_d, order, fname):
     return ens_dt, title
 
 
-def get_ensemble_content(nn_d, vote, quantity):
+def get_ensemble_content(nn_d, vote):
     mn = MNISTBase(nn_d['Type'])
     if vote==True:
         conf_type = "Confusion Votes"
@@ -169,11 +167,10 @@ def get_accuracy_rank(d):
                Output('view-tabs', 'children')
                ],
               [Input('upload-ens', 'contents'),
-              Input('ens-slider', 'value'),
               Input('ens-bool', 'on')],
               State('upload-ens', 'filename'),
               State('upload-ens', 'last_modified'))
-def update_output(list_of_contents, quantity, vote, list_of_names, list_of_dates):
+def update_output(list_of_contents, vote, list_of_names, list_of_dates):
 
     if list_of_names == None:
         d = {'Loss': [0], 'Accuracy': [0], 'Validation Loss': [0], 'Validation Accuracy': [0]}
@@ -190,23 +187,20 @@ def update_output(list_of_contents, quantity, vote, list_of_names, list_of_dates
         # print("Type", p_dict, type(p_dict))
         n=0
         label_list = []
+        tc, title = get_ensemble_content(p_dict, vote)
+        my_tab = dcc.Tab(label=title, style=tab_style, children=[tc], selected_style=tab_selected_style,
+                         className='dash-bootstrap')
+        label_list.append(my_tab)
         accuracy_order = []
         for tb in p_dict['Ensemble files']:
-            if n == 0:
-                tc, title = get_ensemble_content(p_dict, vote, quantity)
-
-
-            else:
-                with open(tb[3:], 'rb') as comp_f:
-                    c_dict = pickle.load(comp_f)
-                    # accuracy_order.append(c_dict)
-                # accuracy_order.sort(key=get_accuracy_rank)
-                # for c_d in accuracy_order:
-                tc, title = get_component_content(c_dict, n, tb[3:])
-
-            n+=1
-
-            my_tab = dcc.Tab(label=title, style=tab_style, children=[tc], selected_style=tab_selected_style, className='dash-bootstrap')
+            with open(tb[3:], 'rb') as comp_f:
+                c_dict = pickle.load(comp_f)
+            accuracy_order.append(c_dict)
+            accuracy_order.sort(key=get_accuracy_rank, reverse=True)
+        for c_d in accuracy_order:
+            tc, title = get_component_content(c_d)
+            my_tab = dcc.Tab(label=title, style=tab_style, children=[tc], selected_style=tab_selected_style,
+                             className='dash-bootstrap')
             label_list.append(my_tab)
 
         tab_layout = dcc.Tabs(id='dyn-tabs', value='tab-master', children=label_list)
