@@ -382,49 +382,105 @@ class CNN():
             self.model = tf.keras.models.load_model(fname)
 
 class CNNPooling():
-    def __init__(self, mnist, hidden_layers, mlp, dropout, activation):
+    def __init__(self, mnist, hidden_layers, mlp, dropout, activation, single_filter):
         self.mnist = mnist
         self.num_layers = len(hidden_layers)
         self.hidden_layers = hidden_layers
         self.mlp = mlp
         self.dropout = dropout
         self.activation = activation
+        self.single_filter = single_filter
         self.model = self.build_model()
         self.history = None
+        self.best_model=None
+
 
     def build_model(self):
-        t_s = self.mnist.train_images.shape
-        if len(t_s) < 4:
-            layer_list = [layers.Conv2D(self.hidden_layers[0][0],
-                            (self.hidden_layers[0][1], self.hidden_layers[0][1]),
-                            input_shape=(28, 28, 1), activation=self.activation)]
-            self.mnist.train_images = self.mnist.train_images.reshape((self.mnist.train_images.shape[0], 28, 28, 1))
-            self.mnist.test_images = self.mnist.test_images.reshape((self.mnist.test_images.shape[0], 28, 28, 1))
-        else:
-            layer_list = [layers.Conv2D(self.hidden_layers[0][0],
-                            (self.hidden_layers[0][1], self.hidden_layers[0][1]),
-                            input_shape=(32, 32, 3), activation=self.activation)]
-
-        i=0
-        for filter, kernel in self.hidden_layers:
-            if i==0:
-                i=1
-                continue
+        if self.single_filter == 1:
+            t_s = self.mnist.train_images.shape
+            if len(t_s) < 4:
+                layer_list = [layers.Conv2D(self.hidden_layers[0][0],
+                                (self.hidden_layers[0][1], self.hidden_layers[0][1]),
+                                input_shape=(28, 28, 1), activation=self.activation, kernel_initializer='he_uniform')]
+                self.mnist.train_images = self.mnist.train_images.reshape((self.mnist.train_images.shape[0], 28, 28, 1))
+                self.mnist.test_images = self.mnist.test_images.reshape((self.mnist.test_images.shape[0], 28, 28, 1))
             else:
-                i=1
-                l = layers.Conv2D(filter, (kernel, kernel), activation=self.activation)
-                layer_list.append(l)
-                layer_list.append(layers.MaxPooling2D((2, 2)))
-                layer_list.append(layers.Dropout(0.1))
+                layer_list = [layers.Conv2D(self.hidden_layers[0][0],
+                                (self.hidden_layers[0][1], self.hidden_layers[0][1]),
+                                input_shape=(32, 32, 3), activation=self.activation, kernel_initializer='he_uniform')]
+                layer_list.append(layers.BatchNormalization())
 
-        model = tf.keras.models.Sequential(layer_list)
-        model.add(layers.Flatten())
-        for l in self.mlp:
-            model.add(layers.Dense(l, activation=self.activation, kernel_initializer='he_uniform'))
-            model.add(layers.Dropout(self.dropout))
+            i=0
+            for filter, kernel in self.hidden_layers:
+                if i==0:
+                    i=1
+                    continue
+                else:
+                    i=1
+                    l = layers.Conv2D(filter, (kernel, kernel), activation=self.activation, kernel_initializer='he_uniform')
 
-        model.add(layers.Dense(10))
-        print(model.summary())
+                    layer_list.append(l)
+                    layer_list.append(layers.BatchNormalization())
+                    layer_list.append(layers.MaxPooling2D((2, 2)))
+                    layer_list.append(layers.Dropout(0.25))
+
+
+            model = tf.keras.models.Sequential(layer_list)
+            model.add(layers.Flatten())
+            for l in self.mlp:
+                model.add(layers.Dense(l, activation=self.activation, kernel_initializer='he_uniform'))
+                model.add(layers.Dropout(self.dropout))
+
+            model.add(layers.Dense(10))
+            print(model.summary())
+        else:
+            t_s = self.mnist.train_images.shape
+            if len(t_s) < 4:
+                layer_list = [layers.Conv2D(self.hidden_layers[0][0],
+                                            (self.hidden_layers[0][1], self.hidden_layers[0][1]),
+                                            input_shape=(28, 28, 1), activation=self.activation, padding='same', kernel_initializer='he_uniform')]
+                layer_list.append(layers.BatchNormalization())
+
+                self.mnist.train_images = self.mnist.train_images.reshape((self.mnist.train_images.shape[0], 28, 28, 1))
+                self.mnist.test_images = self.mnist.test_images.reshape((self.mnist.test_images.shape[0], 28, 28, 1))
+            else:
+                layer_list = [layers.Conv2D(self.hidden_layers[0][0],
+                                            (self.hidden_layers[0][1], self.hidden_layers[0][1]),
+                                            input_shape=(32, 32, 3), activation=self.activation, padding='same', kernel_initializer='he_uniform')]
+                layer_list.append(layers.BatchNormalization())
+
+            i = 0
+            for filter, kernel in self.hidden_layers:
+                if i == 0:
+                    l = layers.Conv2D(filter, (kernel, kernel), activation=self.activation, padding='same', kernel_initializer='he_uniform')
+                    layer_list.append(l)
+                    layer_list.append(layers.BatchNormalization())
+                    layer_list.append(layers.MaxPooling2D((2, 2)))
+                    layer_list.append(layers.Dropout(0.25))
+
+                    i = 1
+                    continue
+                else:
+                    i = 1
+                    l = layers.Conv2D(filter, (kernel, kernel), activation=self.activation, padding='same', kernel_initializer='he_uniform')
+                    l2 = layers.Conv2D(filter, (kernel, kernel), activation=self.activation, padding='same', kernel_initializer='he_uniform')
+                    layer_list.append(l)
+                    layer_list.append(layers.BatchNormalization())
+                    layer_list.append(l2)
+                    layer_list.append(layers.BatchNormalization())
+                    layer_list.append(layers.MaxPooling2D((2, 2)))
+                    layer_list.append(layers.Dropout(0.25))
+
+
+            model = tf.keras.models.Sequential(layer_list)
+            model.add(layers.Flatten())
+            for l in self.mlp:
+                model.add(layers.Dense(l, activation=self.activation, kernel_initializer='he_uniform'))
+                model.add(layers.Dropout(self.dropout))
+
+            model.add(layers.Dense(10))
+            print(model.summary())
+
         return model
 
     def compile_model(self):
@@ -441,7 +497,7 @@ class CNNPooling():
         mc = ModelCheckpoint('best_model.h5', monitor='val_accuracy', mode='max', verbose=1, save_best_only=True)
         history = self.model.fit(x_train, y_train, epochs=epochs, validation_data=(x_val, y_val), callbacks=[custom_early_stopping, mc])
         self.history = history
-        self.model = load_model('best_model.h5')
+        self.best_model = load_model('best_model.h5')
         return history
 
     def evaluate_model(self, verbosity=2):
@@ -507,13 +563,13 @@ class CNNPooling():
             now = datetime.now()
             acc_max = max(self.history.history['accuracy'])
             fname = self.mnist.name + "CNN" + now.strftime("%Y%m%d_%H%M%S") + "_" + str(acc_max*100)[0:6] + '.hdf5'
-            self.model.save(fname)
+            self.best_model.save(fname)
             return fname
 
         if fname.split('.')[-1] != "hdf5":
             fname = fname + '.hdf5'
 
-        self.model.save(fname)
+        self.best_model.save(fname)
         return fname
 
     def load_model(self, fname):
@@ -719,7 +775,7 @@ class NN_layers():
         for fmap in feature_maps:
             print(type(fmap), len(fmap), fmap.shape)
 
-    def dense_layers(self, y):
+    def dense_layers(self, y, l=11):
         for i in range(len(self.model.layers)):
             layer = self.model.layers[i]
             # check for convolutional layer
@@ -728,7 +784,7 @@ class NN_layers():
             # summarize output shape
             print(i, layer.name, layer.output.shape)
 
-        tsne_model = Model(inputs=self.model.inputs, outputs=self.model.layers[11].output)
+        tsne_model = Model(inputs=self.model.inputs, outputs=self.model.layers[l].output)
         tsne_activations = tsne_model.predict(y)
 
         return tsne_activations
@@ -902,14 +958,16 @@ class EnsembleCNN():
 
 
 class EnsembleCNNPooling():
-    def __init__(self, data_set, layer_list, mlp, dropout, activation='relu', epochs=30):
+    def __init__(self, data_set, layer_list, mlp, dropout, activation='relu', epochs=30, single_filter=1):
         self.data_set = MNISTBase(data_set)
         self.af = activation
         self.ep = epochs
+        self.single_filter = single_filter
         self.md = self.build_models(layer_list, mlp, dropout)
         self.model_list = self.md['model']
         self.file_list = self.md['file']
         self.ec = self.ensemble_confusion()
+
 
     def build_models(self, layer_list, mlp, dropout):
         ml = []
@@ -917,7 +975,7 @@ class EnsembleCNNPooling():
         mod_dict = {}
         for layers in layer_list:
             mn = MNISTBase(self.data_set.name)
-            mod = CNNPooling(mn, layers, mlp, dropout, self.af)
+            mod = CNNPooling(mn, layers, mlp, dropout, self.af, self.single_filter)
             mod.compile_model()
             mod.train_model(self.ep)
             mod.evaluate_model(1)

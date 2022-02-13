@@ -6,6 +6,7 @@ import dash_html_components as html
 from app import app
 from dash.dependencies import Input, Output, State
 from util_classes.Dimensionality import DisplayTSNE
+from util_classes.MNIST import MNISTBase
 import plotly.graph_objects as go
 import pickle
 
@@ -70,6 +71,9 @@ def display_tse_bubble(fname, speed):
     di = p_dict['dimensions']
     df = df.reset_index()
     df['labels'] = df['labels'].astype(str)
+
+    mn = MNISTBase[p_dict['name']]
+    X = mn.test_images
 
 
     ymin = df['y'].min()

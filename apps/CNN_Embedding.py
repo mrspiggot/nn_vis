@@ -141,7 +141,11 @@ def update_output(fname, iname, click, l1):
         embed_img = fmap[0]
         print("Shape", embed_img.shape)
 
-        fig = px.imshow((embed_img-fi)/(fa - fi), facet_col=2, binary_string=True, facet_col_wrap=8, height=1200*n, width=1800,
+        # fig = px.imshow((embed_img-fi)/(fa - fi), facet_col=2, binary_string=True, facet_col_wrap=8, height=1200*n, width=1800,
+        #                 facet_row_spacing=0.0001,  # default is 0.07 when facet_col_wrap is used
+        #                 facet_col_spacing=0.0005,  # default is 0.03
+        #                 )
+        fig = px.imshow(embed_img, facet_col=2, binary_string=True, facet_col_wrap=8, height=1200*n, width=1800,
                         facet_row_spacing=0.0001,  # default is 0.07 when facet_col_wrap is used
                         facet_col_spacing=0.0005,  # default is 0.03
                         )

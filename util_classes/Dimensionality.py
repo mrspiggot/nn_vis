@@ -14,11 +14,12 @@ from util_classes.MNIST import NN_layers, MNISTBase
 RS = 20150101
 
 class DisplayTSNE():
-    def __init__(self, name='sk_digits', perplexity=30, early_exaggeration=12.0, dimensions=2):
+    def __init__(self, name='sk_digits', perplexity=30, early_exaggeration=12.0, dimensions=2, layers=11):
         self.source = name
         self.perplexity = perplexity
         self.early_exaggeration = early_exaggeration
         self.dimensions = dimensions
+        self.layers = layers
         self.anim_df = pd.DataFrame()
         self.X, self.y = self.get_data()
         self.static_points = self.static_data_chart()
@@ -46,21 +47,24 @@ class DisplayTSNE():
             nn = NN_layers("fashionCNN20211108_095455.hdf5")
             mn = MNISTBase(nn.name)
 
-            X = nn.dense_layers(mn.test_images)
+            X = nn.dense_layers(mn.test_images, self.layers)
             y = mn.test_labels
         elif self.source == 'cifar10':
-            nn = NN_layers("cifar10CNN20211108_004852.hdf5")
+            nn = NN_layers("cifar10CNN20220206_223413_98.002.hdf5")
             mn = MNISTBase(nn.name)
 
-            X = nn.dense_layers(mn.test_images)
+            X = nn.dense_layers(mn.test_images, self.layers)
             y = mn.test_labels
 
         else:
-            nn = NN_layers("numbersCNN20211108_101910.hdf5")
+            nn = NN_layers("numbersCNN20220208_001257_99.798.hdf5")
             mn = MNISTBase(nn.name)
 
-            X = nn.dense_layers(mn.test_images)
+            X = nn.dense_layers(mn.test_images, self.layers)
             y = mn.test_labels
+
+        print("X", X.shape)
+        print("y", y.shape)
 
         X = X[:3500,:]
         y = y[:3500]
@@ -171,6 +175,8 @@ class DisplayTSNE():
         else:
             print('"Dimensions" must be 2 or 3')
 
+        print(df2.info())
+        print(df2.head())
         return X_proj, df2
 
     def pickle_data(self, fname="tsne"):
@@ -179,6 +185,7 @@ class DisplayTSNE():
         p_dict['early_exaggeration'] = self.early_exaggeration
         p_dict['dimensions'] = self.dimensions
         p_dict['anim_df'] = self.anim_df
+        p_dict['name'] = self.name
 
         fn = fname + "_p_" + str(self.perplexity) + "_e_" + str(self.early_exaggeration) + "_d_" + str(self.dimensions) + ".pickle"
         with open(fn, 'wb') as pkl:
